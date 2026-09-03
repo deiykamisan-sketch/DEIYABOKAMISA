@@ -1,0 +1,1 @@
+"""Lectures application package."""

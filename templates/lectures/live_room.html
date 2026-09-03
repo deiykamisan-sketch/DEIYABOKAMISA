@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% load static %}
+{% block title %}Live Studio · {{ session.lecture.title }}{% endblock %}
+{% block content %}
+<div id="live-room-config" hidden data-api="{% url 'live_api' session.code %}" data-signals="{% url 'signal_api' session.code %}"
+ data-recording="{% url 'upload_recording' session.code %}" data-csrf="{{ csrf_token }}" data-user-id="{{ request.user.id }}"
+ data-lecturer="{% if is_lecturer %}true{% else %}false{% endif %}"></div>
+
+<header class="live-header"><div><p class="eyebrow">● LIVE TRANSPARENT STUDIO</p><h1>{{ session.lecture.title }}</h1>
+ <p>Code: <strong class="lecture-code">{{ session.code }}</strong></p></div>
+ <div class="live-actions">{% if is_lecturer %}<button id="camera-toggle" class="ghost" type="button">📷 Camera</button>
+ <button id="speech-toggle" class="ghost" type="button">🎙 Speech text</button><button id="air-pen-toggle" class="ghost active" type="button">🖊 Air pen ON</button>
+ <button id="record-toggle" class="button" type="button">Starting recording…</button><button id="end-live" class="danger" type="button">End & save</button>
+ {% else %}<button id="raise-hand" class="ghost" type="button">✋ Raise hand</button>{% endif %}</div></header>
+
+<div id="permission-message" class="permission-message">Requesting laptop camera and built-in microphone…</div>
+<div class="live-layout"><section class="transparent-stage">
+ {% if is_lecturer %}<video id="local-camera" class="stage-video mirror" autoplay muted playsinline></video>
+ <canvas id="board" class="ink-layer" width="1280" height="720"></canvas>
+ <canvas id="tracking-canvas" width="320" height="180" hidden></canvas>
+ <div class="floating-tools"><label>Ink <input id="color" type="color" value="#ff304f"></label><label>Size <input id="width" type="range" min="2" max="24" value="7"></label>
+ <button id="eraser" type="button">Eraser</button><button id="undo" type="button">Undo</button><button id="clear" type="button">Clear</button>
+ <button id="network-diagram" type="button">Network diagram</button></div>
+ {% else %}<video id="remote-camera" class="stage-video" autoplay playsinline></video><img id="live-board" class="ink-layer student-ink" alt="Live digital ink">{% endif %}
+ <div id="live-caption" class="live-caption" aria-live="polite"></div>
+ <div class="transparent-badge">VIRTUAL TRANSPARENT BOARD</div>
+ </section>
+
+ <aside class="live-sidebar"><div class="panel"><h3>Participants <span id="count"></span></h3><div id="participants"></div></div>
+ <div class="panel"><h3>Automatic transcript</h3><div id="transcript" class="transcript">Waiting for speech…</div></div>
+ <div class="panel chat"><h3>Questions & chat</h3><div id="messages" role="log" aria-live="polite"></div>
+ <div class="chat-send"><input id="chat-text" maxlength="500" placeholder="Write a question" autocomplete="off"><button id="send-chat" class="button small">Send</button></div></div></aside></div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'live.js' %}"></script>{% endblock %}

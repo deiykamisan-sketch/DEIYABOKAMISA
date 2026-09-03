@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Smart Lecture Studio{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'dashboard.css' %}">
+
+<section class="studio-hero">
+  <div><p class="eyebrow">AI AIR-WRITING STUDIO</p><h1>Welcome, {{ request.user.username }}</h1>
+    <p>Use your laptop camera, built-in microphone and an ordinary pen to teach on a virtual transparent board.</p></div>
+  <div class="studio-actions">
+    <a class="ghost" href="{% url 'join_live' %}">Enter lecture code</a>
+    <a class="button" href="{% url 'lecture_create' %}">+ Create lecture</a>
+  </div>
+</section>
+
+<section class="setup-strip">
+  <span><b>1</b> Create lecture</span><i>→</i><span><b>2</b> Start camera</span><i>→</i>
+  <span><b>3</b> Draw in air</span><i>→</i><span><b>4</b> Record or share</span>
+</section>
+
+<section class="feature-grid">
+  <article class="feature-card camera-card"><span>📷</span><h2>Camera + Transparent Board</h2><p>Your picture appears behind digital ink. Uses the laptop camera or a phone/IP camera.</p><small>Available inside a live lecture</small></article>
+  <article class="feature-card"><span>🖊️</span><h2>Air Writing</h2><p>Track your hand or an ordinary ink pen with a bright-green tip marker—no electronic pen required.</p><code>python run_air_board.py</code></article>
+  <article class="feature-card"><span>🎙️</span><h2>Speech-to-Text</h2><p>Uses the laptop's built-in microphone for captions, transcript and voice commands.</p><small>Edge or Chrome recommended</small></article>
+  <article class="feature-card"><span>🔴</span><h2>Recording</h2><p>Record the whiteboard, lecturer camera and microphone together, then save the video under the lecture.</p></article>
+  <article class="feature-card"><span>👥</span><h2>Live Classroom</h2><p>Students join with a code, see the board and video, use chat and raise their hands.</p><a href="{% url 'join_live' %}">Join a class →</a></article>
+  <article class="feature-card"><span>🤖</span><h2>AI Notes + PDF</h2><p>Prepare transcript, summary, lecture notes, questions and an exportable PDF.</p><small>AI provider can be connected later</small></article>
+  <article class="feature-card"><span>🟢</span><h2>Google Meet</h2><p>Capture the Air Board window with OBS Virtual Camera, then select it as the camera in Google Meet.</p></article>
+  <article class="feature-card"><span>💾</span><h2>Lecture Library</h2><p>Keep videos, whiteboard snapshots, notes, files, questions and secure archive links together.</p></article>
+</section>
+
+<header class="section-head"><div><p class="eyebrow">MY LECTURES</p><h2>Start or continue teaching</h2></div><a class="button small" href="{% url 'lecture_create' %}">New lecture</a></header>
+<section class="lecture-grid">
+{% for lecture in lectures %}
+  <article class="lecture-card"><div class="card-top"><span>{{ lecture.subject|default:"General" }}</span><span class="pill">{{ lecture.get_privacy_display }}</span></div>
+    <h2>{{ lecture.title }}</h2><p>{{ lecture.description|truncatewords:18|default:"Camera, air board, recording and live classroom are ready." }}</p>
+    <div class="lecture-buttons"><a class="ghost" href="{{ lecture.get_absolute_url }}">Open workspace</a>
+      <form method="post" action="{% url 'start_live' lecture.pk %}">{% csrf_token %}<button class="button" type="submit">● Start live</button></form></div>
+  </article>
+{% empty %}
+  <div class="first-lecture"><div class="air-demo"><div class="person">👨‍🏫</div><div class="ink">PC → Switch → Router → Server</div></div>
+    <div><h2>Create your first lecture</h2><p>A lecture is the container that saves your camera recording, air-writing board, transcript, notes and student questions.</p>
+      <a class="button" href="{% url 'lecture_create' %}">Create lecture and start</a></div></div>
+{% endfor %}
+</section>
+{% endblock %}

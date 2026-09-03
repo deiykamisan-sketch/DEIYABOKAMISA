@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ lecture.title }} · Lectura AI{% endblock %}
+
+{% block content %}
+<header class="page-head">
+    <div>
+        <p class="eyebrow">{{ lecture.subject|default:"LECTURE" }}</p>
+        <h1>{{ lecture.title }}</h1>
+    </div>
+
+    <div class="lecture-actions">
+        <form
+            class="inline"
+            method="post"
+            action="{% url 'start_live' lecture.pk %}"
+        >
+            {% csrf_token %}
+            <button class="button" type="submit">
+                ● Start live lecture
+            </button>
+        </form>
+
+        {% if lecture.privacy == "shared" %}
+            <button
+                id="copy-archive-link"
+                class="ghost"
+                type="button"
+                data-share-url="{% url 'shared_lecture' lecture.share_token %}"
+            >
+                Copy archive link
+            </button>
+        {% endif %}
+    </div>
+</header>
+
+<div class="workspace">
+    <section class="board-panel">
+        <div class="toolbar">
+            <label for="color">
+                Color
+                <input id="color" type="color" value="#101827">
+            </label>
+
+            <label for="width">
+                Width
+                <input id="width" type="range" min="1" max="18" value="4">
+            </label>
+
+            <button id="eraser" type="button">Eraser</button>
+            <button id="clear" type="button">Clear</button>
+            <button id="save" class="button small" type="button">
+                Save snapshot
+            </button>
+        </div>
+
+        <canvas id="board" width="1100" height="620">
+            Your browser does not support the HTML canvas element.
+        </canvas>
+
+        <div class="recognize-row">
+            <input
+                id="recognized"
+                type="text"
+                placeholder="Recognized text (OCR/AI adapter output)"
+            >
+            <input
+                id="drawing-type"
+                type="text"
+                placeholder="Diagram type, e.g. UML"
+            >
+            <span id="status" role="status" aria-live="polite"></span>
+        </div>
+    </section>
+
+    <aside>
+        <div class="panel">
+            <h3>Automatic live recordings</h3>
+            {% for recording in lecture.recordings.all %}
+                {% if recording.video_file %}<video controls preload="metadata"><source src="{{ recording.video_file.url }}">Your browser does not support video playback.</video>{% endif %}
+            {% empty %}<p>No live recording saved yet. Start and end a live lecture to create one.</p>{% endfor %}
+
+            {% if lecture.attachment %}<p><a class="button small" href="{{ lecture.attachment.url }}" download>Download AI summary PDF</a></p>{% endif %}
+
+            {% if lecture.description %}
+                <p>{{ lecture.description|linebreaksbr }}</p>
+            {% else %}
+                <p>No description added.</p>
+            {% endif %}
+        </div>
+
+        <div class="panel">
+            <h3>Transcript</h3>
+            {% if lecture.transcript %}<p>{{ lecture.transcript|linebreaksbr }}</p>{% else %}<p>No transcript yet.</p>{% endif %}
+            <h3>Summary</h3>
+            {% if lecture.summary %}
+                <p>{{ lecture.summary|linebreaksbr }}</p>
+            {% else %}
+                <p>No summary yet.</p>
+            {% endif %}
+
+            <h3>Notes</h3>
+            {% if lecture.notes %}
+                <p>{{ lecture.notes|linebreaksbr }}</p>
+            {% else %}
+                <p>No notes yet.</p>
+            {% endif %}
+        </div>
+    </aside>
+</div>
+
+<section class="split">
+    <div>
+        <h2>Original drawings + recognized text</h2>
+
+        {% for shot in lecture.snapshots.all %}
+            <article class="snapshot">
+                <img src="{{ shot.original_drawing }}" alt="Whiteboard snapshot">
+                <div>
+                    <span class="pill">
+                        {{ shot.drawing_type|default:"Drawing" }}
+                    </span>
+
+                    {% if shot.recognized_text %}
+                        <p>{{ shot.recognized_text|linebreaksbr }}</p>
+                    {% else %}
+                        <p>Original preserved without a text layer.</p>
+                    {% endif %}
+                </div>
+            </article>
+        {% empty %}
+            <p>No snapshots saved yet.</p>
+        {% endfor %}
+    </div>
+
+    <div>
+        <h2>Questions</h2>
+
+        <form method="post" action="{% url 'add_question' lecture.pk %}">
+            {% csrf_token %}
+            {{ qform.as_p }}
+            <button class="button small" type="submit">Add question</button>
+        </form>
+
+        {% for question in lecture.questions.all %}
+            <article class="question">
+                <b>{{ question.author.username }}</b>
+                <p>{{ question.text|linebreaksbr }}</p>
+
+                {% if question.answer %}
+                    <p><strong>Answer:</strong> {{ question.answer|linebreaksbr }}</p>
+                {% endif %}
+            </article>
+        {% empty %}
+            <p>No questions added yet.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.snapshotUrl = "{% url 'save_snapshot' lecture.pk %}";
+    window.csrfToken = "{{ csrf_token }}";
+
+    const copyButton = document.querySelector("#copy-archive-link");
+
+    if (copyButton) {
+        copyButton.addEventListener("click", async () => {
+            const sharePath = copyButton.dataset.shareUrl;
+            const shareUrl = new URL(sharePath, window.location.origin).href;
+
+            try {
+                await navigator.clipboard.writeText(shareUrl);
+                copyButton.textContent = "Link copied";
+            } catch (error) {
+                window.prompt("Copy this lecture link:", shareUrl);
+            }
+        });
+    }
+</script>
+<script src="{% static 'whiteboard.js' %}"></script>
+{% endblock %}
